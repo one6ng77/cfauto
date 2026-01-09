@@ -1,7 +1,3 @@
-这是为你定制的最终版 `README.md`。它涵盖了我们刚才完成的所有高级功能（GitHub Token、版本检测、项目隔离、自动修复等）。
-
-你可以直接复制下面的内容到你的 GitHub 仓库，或者保存为 `说明书.txt`。
-
 ---
 
 # 🚀 Cloudflare Worker 多项目部署管理器 (Ultimate Edition)
