@@ -1,171 +1,167 @@
 ---
 
-# 🚀 Cloudflare Worker 多账号智能中控 (V7.0 ECH Support)
+# 🚀 Worker 智能部署中控 (Worker Command Center)
 
-这是一个基于 Cloudflare Worker 的高级部署管理工具。它允许你通过一个统一的 Web 面板，同时管理多个 Cloudflare 账号下的多个 Worker 项目（支持 `CMliu-EdgeTunnel`、`Joey-相信光` 以及最新的 `ECH-WebSocket`）。
+**版本:** V7.3
 
-**V7.0 核心更新：** 新增对 **ECH** 项目的支持，并集成了全球 ProxyIP 选择器，支持代码级自动注入 ProxyIP，无需手动修改代码。
-<img width="706" height="419" alt="image" src="https://github.com/user-attachments/assets/6fb09de1-a075-41e0-9cec-2a18f8b6f133" />
-<img width="1920" height="892" alt="image" src="https://github.com/user-attachments/assets/2be4ecbd-5704-49c4-a5d3-c87e4b552d66" />
+**核心功能:** 多账号管理 / 多项目一键部署 / 自动更新 / 流量监控 / 智能变量配置
 
----
-
-## ✨ 核心功能
-
-1. **多账号统一管理**：
-* 支持无限添加 Cloudflare 账号（需提供 Account ID 和 API Token）。
-* 支持跨账号管理 Worker，每个账号可配置多个不同类型的 Worker。
-* **流量监控**：自动获取每个账号的今日流量使用情况，并按剩余流量智能排序。
-
-
-2. **多项目支持**：
-* 🔴 **CMliu (EdgeTunnel)**：支持变量管理、自动更新、UUID 自动轮换。
-* 🔵 **Joey (相信光)**：支持自动添加 `window` polyfill 修复，一键部署。
-* 🟢 **ECH (WebSocket)**：**[新]** 专为 ECH 项目设计，支持**直接注入 ProxyIP** 到代码中，内置全球/亚洲/欧洲/北美节点列表。
-
-
-3. **智能部署与更新**：
-* **自动检测更新**：对比 GitHub 上游仓库与本地部署版本。
-* **一键部署**：从 GitHub 拉取最新纯净代码，注入配置后推送到你的 Worker。
-* **配置同步**：支持从已有的 Worker 中读取配置，或将配置同步到其他账号。
-* **自动修复**：删除变量时会自动触发代码重部署，防止残留配置导致错误。
-
-
-4. **自动化 (Cron)**：
-* **定时检查更新**：后台自动检查上游更新并推送到所有账号。
-* **流量熔断保护**：当账号流量超过设定阈值（如 90%），自动轮换 UUID 并重新部署，防止被滥用。
-
-
-5. **Web 面板特性**：
-* 密码访问保护。
-* 响应式布局（支持手机/PC）。
-* **布局切换**：支持“上下结构”和“左右分栏”切换，适应不同屏幕。
-
-
+这是一个运行在 Cloudflare Worker 上的“中控台”程序。它允许您在一个统一的面板中管理多个 Cloudflare 账号，并一键将常用的代理脚本（如 CMliu、Joey、ECH）部署到这些账号下的 Worker 中。
 
 ---
 
-## 🛠️ 部署准备
+## ✨ 主要功能
 
-在部署此中控 Worker 之前，你需要：
+### 1. 多账号与多项目管理
 
-1. **一个 Cloudflare 账号**（用于托管此中控脚本）。
-2. **一个 KV Namespace**：用于存储账号数据和配置信息。
-
-### 部署步骤
-
-1. 在 Cloudflare Dashboard 创建一个新的 Worker（例如命名为 `manager`）。
-2. 将 `worker.js` 的完整代码复制并粘贴到编辑器中，保存。
-3. **绑定 KV 命名空间**：
-* 进入 Worker 的 **Settings (设置)** -> **Variables (变量)** -> **KV Namespace Bindings**。
-* 点击 `Add Binding`。
-* **Variable name (变量名)** 必须填写：`CONFIG_KV`。
-* **KV Namespace** 选择你创建的 KV。
-
-
-4. **设置环境变量**：
-* 进入 **Settings (设置)** -> **Variables (变量)** -> **Environment Variables**。
-* 添加以下变量：
+* **多账号支持**: 可以添加多个 Cloudflare 账号（通过 Account ID 和 API Token）。
+* **多项目支持**: 目前支持一键部署以下三种脚本：
+* **🔴 CMliu (EdgeTunnel)**: 经典的 VLESS/Trojan 部署方案。
+* **🔵 Joey (少年你相信光吗)**: 自动修复与节点优化的脚本。
+* **🟢 ECH (WebSocket Proxy)**: 支持 ECH 方案的 WebSocket 代理。
 
 
 
-| 变量名 | 必填 | 说明 | 示例 |
-| --- | --- | --- | --- |
-| `ACCESS_CODE` | ✅ 是 | Web 面板的访问密码（直接在 URL 后加 `?code=密码` 或通过 Cookie 登录） | `MySuperPass123` |
-| `GITHUB_TOKEN` | ❌ 否 | (推荐) GitHub PAT Token，用于提高 API 请求限额，防止检查更新频繁报错 | `ghp_xxxxxx` |
+### 2. 智能变量与配置管理
+
+* **可视化编辑**: 在面板中直接增删改 Worker 的环境变量，无需进入 Cloudflare 后台。
+* **智能辅助输入 (V7.3 新增)**:
+* **PROXYIP**: 提供全球节点（亚洲/欧洲/北美）下拉选择，自动添加 `:443` 端口。
+* **DOH**: 提供常用 DOH 地址（如 `dns.jhb.ovh` 等）下拉选择。
+
+
+* **配置同步**: 支持从已部署的 Worker 中反向读取配置到面板，方便迁移。
+* **UUID 一键轮换**: 支持一键生成新的 UUID 并自动重新部署。
+
+### 3. 自动化与监控
+
+* **自动更新**: 通过 Cron 触发器，定期检查 GitHub 上游代码更新。如果发现新版本，会自动拉取并重新部署所有关联的 Worker。
+* **流量监控**: 实时显示每个账号当天的请求数流量及使用百分比。
+* **熔断机制**: 当账号流量达到设定阈值时，自动轮换 UUID 或停止服务（需配置）。
+
+### 4. 用户体验优化
+
+* **UI 自适应**: 完美适配手机和电脑端，日志窗口自动调整位置。
+* **PWA 支持**: 支持添加到手机主屏幕，像原生 App 一样使用。
+* **部署日志**: 实时显示部署状态、成功/失败信息及错误原因。
 
 ---
 
-## ⚙️ Cron 定时任务设置
+## 🛠️ 部署指南
 
-为了让自动更新和流量监控生效，你需要配置 Cron 触发器。
+### 第一步：准备工作
 
-1. 进入 Worker 的 **Settings (设置)** -> **Triggers (触发器)**。
+1. 拥有一个 **Cloudflare 账号**。
+2. 准备好目标账号的 **Account ID** 和 **API Token**（权限要求见下文）。
+
+### 第二步：创建 KV Namespace (必须)
+
+此脚本严重依赖 KV 存储来保存账号信息和配置。
+
+1. 在 Cloudflare 面板左侧菜单点击 **Storage & Databases** -> **KV**。
+2. 点击 **Create Namespace**。
+3. 命名为 `WORKER_CONFIG` (或者你喜欢的名字)。
+4. 点击 **Add**。
+
+### 第三步：部署 Worker
+
+1. 创建一个新的 Worker (例如命名为 `admin-panel`)。
+2. 点击 **Settings** -> **Variables**。
+3. **绑定 KV Namespace**:
+* 在 **KV Namespace Bindings** 区域点击 `Add binding`。
+* **Variable name (变量名)** 必须填写: `CONFIG_KV` (注意：必须完全一致，否则无法保存数据)。
+* **KV Namespace**: 选择上一步创建的 `WORKER_CONFIG`。
+
+
+4. **添加环境变量** (可选但推荐):
+* `ACCESS_CODE`: 设置一个访问密码（防止他人访问你的面板）。
+* `GITHUB_TOKEN`: (可选) 如果你需要频繁检查更新，建议提供 GitHub Token 以避免 API 限制。
+
+
+5. 点击 **Edit code**，将 `worker.js` 的所有代码粘贴进去。
+6. 点击 **Deploy**。
+
+### 第四步：配置 Cron (定时任务)
+
+为了让自动更新和流量监控生效，需要设置 Cron。
+
+1. 在 Worker 的 **Settings** -> **Triggers** 页面。
 2. 点击 **Add Cron Trigger**。
-3. **推荐配置**：每 30 分钟执行一次。
-* Cron 表达式：`*/30 * * * *`
-
-
+3. 推荐设置: `*/30 * * * *` (每 30 分钟执行一次)。
 4. 保存。
 
-**Cron 运行逻辑：**
+---
 
-* 脚本会根据你在 Web 面板顶部设置的 **"自动检测"** 开关和 **"时间间隔"** 来决定是否执行实际逻辑。
-* 即便是 Cron 每分钟触发一次，如果面板设置的是 30 分钟，脚本也会在未到时间时直接跳过，节省资源。
+## ⚙️ 变量设置说明
+
+### 1. Worker 自身的环境变量
+
+| 变量名 | 必填 | 说明 |
+| --- | --- | --- |
+| `CONFIG_KV` | **是** | **KV 绑定名称**。必须绑定到一个 KV 空间，用于存储账号和配置。 |
+| `ACCESS_CODE` | 否 | 面板的访问密码。如果不设置，任何人知道网址都能访问。 |
+| `GITHUB_TOKEN` | 否 | 用于请求 GitHub API。不填容易触发速率限制导致无法检查更新。 |
+
+### 2. 被控账号的 API Token 权限
+
+在添加账号时，填写的 API Token 需要具备以下权限：
+
+* **Workers Scripts**: `Edit` (用于读写 Worker 代码和变量)
+* **Account Settings**: `Read` (用于读取账号流量统计)
+* **User Details**: `Read` (可选，部分统计功能可能需要)
 
 ---
 
-## 📖 使用指南
+## 📖 使用教程
 
-### 1. 添加被控账号
+### 1. 添加账号
 
-* 点击面板上的 **"➕ 添加账号"**。
-* **Account ID**：在 Cloudflare 首页域名列表右下角获取。
-* **API Token**：
-* 需在 [My Profile -> API Tokens](https://dash.cloudflare.com/profile/api-tokens) 创建。
-* **必须具备的权限**：
-1. `Account` - `Cloudflare Pages` - `Edit` (可选，若管理 Pages)
-2. `Account` - `Workers Scripts` - `Edit` (必须，用于部署代码)
-3. `Account` - `Account Settings` - `Read` (必须，用于读取 ID)
-4. `Account` - `Account Analytics` - `Read` (必须，用于统计流量)
+1. 进入面板，输入密码登录。
+2. 点击右上角的 **“➕ 添加账号”**。
+3. 填写 **备注**、**Account ID** 和 **API Token**。
+4. 在对应的项目栏（如 CMliu Workers）填写你希望该账号下哪个 Worker 被接管。
+* *例如：如果不填写，脚本不会自动创建 Worker，你需要在该账号下先创建一个 Worker，然后把名字填在这里。*
 
 
+5. 点击 **“💾 保存账号”**。
+
+### 2. 部署项目
+
+1. 在右侧（或手机端下方）的项目卡片中（如 🔴 CMliu 配置），点击 **“➕ 变量”** 添加必要的变量（如 `UUID`, `PROXYIP` 等）。
+2. 利用下拉菜单快速选择 `PROXYIP` 或 `DOH`。
+3. 点击 **“🚀 部署 CMliu”**。
+4. 观察顶部的日志窗口，显示 `✅ 更新成功` 即完成。
+
+### 3. 自动更新设置
+
+1. 在顶部控制栏，勾选 **“自动检测”**。
+2. 设置间隔时间（如 30 分钟）。
+3. 点击 **“保存”**。
+4. 只要配置了 Cron 触发器，系统就会在后台自动检查。
+
+---
+
+## ⚠️ 注意事项与常见问题
+
+1. **KV 绑定名称**: 请务必确保 KV 的绑定变量名为 `CONFIG_KV`，否则脚本会报错 `env.CONFIG_KV is null`。
+2. **首次部署**:
+* 本脚本**不会自动创建**目标 Worker。请确保目标账号下已经存在对应名字的 Worker（哪怕是空的 Hello World）。
+* 添加账号时，填写的 Worker 名称必须与目标账号下实际存在的 Worker 名称一致。
 
 
-* **Worker 名称**：
-* 在对应的输入框（红/蓝/绿）填入该账号下**已创建的空 Worker 名称**。
-* 支持多个，用逗号分隔（例如：`worker1, worker2`）。
+3. **ECH 项目**:
+* ECH 项目的 `PROXYIP` 是直接写入代码中的（硬编码），而不是作为环境变量上传。部署时面板会自动处理替换。
 
 
-
-### 2. 管理 ECH 项目 (新功能)
-
-* 在面板右侧（或下方）找到 **🟢 ECH 配置** 卡片。
-* **ProxyIP 选择**：
-* 使用下拉菜单选择你需要的节点（全球/亚洲/欧洲/北美）。
-* 选择后，脚本会自动将其填入 `PROXYIP` 变量框。
+4. **Joey 项目**:
+* 脚本会自动为 Joey 项目添加 `var window = globalThis;` 的补丁，以防止代码报错。
 
 
-* **部署原理**：
-* 点击 **"🚀 部署 ECH"** 时，脚本会拉取 GitHub 最新代码。
-* 自动查找代码中的 `const CF_FALLBACK_IPS = [...];`。
-* 将你选择的 ProxyIP **直接替换** 到代码中（硬编码），然后上传到 Cloudflare。
-* *注意：因为是直接修改代码，所以 Cloudflare 后台的环境变量里可能看不到 PROXYIP，这是正常的。*
-
-
-
-### 3. 全局设置
-
-* **布局切换**：点击顶部的 `◫ 布局` 按钮，可切换左右分栏模式，方便宽屏操作。
-* **熔断阈值**：
-* 在顶部设置“熔断”百分比（例如 90）。
-* 当某账号流量使用超过 90% 时，Cron 任务会自动为该账号下的 cmliu/joey 项目更换 UUID 并重新部署，防止流量耗尽或被封锁。
+5. **熔断机制**:
+* 如果开启了熔断（设置了阈值），当流量超标时，脚本会自动轮换 UUID。这会导致旧的节点连接失效，从而达到阻断流量的目的。
 
 
 
 ---
 
-## ⚠️ 注意事项
-
-1. **KV 绑定至关重要**：如果不绑定名为 `CONFIG_KV` 的 KV 空间，所有数据（账号、配置）都无法保存，网页会报错。
-2. **API Token 权限**：如果部署失败（提示 `Authentication` 或 `Permission` 错误），请检查被控账号的 API Token 是否包含了 **Workers Scripts: Edit** 权限。
-3. **覆盖风险**：点击部署会**强制覆盖**线上 Worker 的代码。如果你在线上 Worker 手动修改了代码（非环境变量），部署后会被 GitHub 的纯净版本覆盖。
-4. **ECH 的 ProxyIP**：ECH 项目不需要频繁更新。如果只是想换 IP，在面板选择 IP 后再次点击部署即可。
-5. **GitHub API 限制**：如果不配置 `GITHUB_TOKEN`，频繁刷新页面或检查更新可能会触发 GitHub 的 API 速率限制（每小时 60 次），导致显示“获取失败”。建议在环境变量中配置 Token。
-
----
-
-## 📅 更新日志
-
-### V7.0
-
-* [新增] **ECH 项目支持**：针对 WebSocket 协议的特定优化。
-* [新增] **ProxyIP 选择器**：内置常用高质量 ProxyIP 列表。
-* [核心] **代码注入技术**：部署 ECH 时自动替换源码中的常量。
-* [优化] 账号编辑界面适配三种项目类型。
-
-### V6.8
-
-* [修复] 删除变量时自动重置代码，解决残留配置导致的 Worker 崩溃问题。
-* [优化] 增加“同步配置”时的账号选择功能。
-* [UI] 增加布局切换功能。
+**免责声明**: 本脚本仅供学习与技术研究使用，请勿用于非法用途。使用本脚本所产生的任何后果由使用者自行承担。
